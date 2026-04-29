@@ -24,19 +24,22 @@ export const config = {
   showAccidentals: true,
   showFrequency:   JSON.parse(localStorage.getItem('cfg-frequency')   ?? 'false'),
   shadowOffKey:    JSON.parse(localStorage.getItem('cfg-shadow-key')  ?? 'false'),
+  showRootKey:     JSON.parse(localStorage.getItem('cfg-root-key')    ?? 'true'),
 };
 
 // Callbacks wired at startup by app.js to avoid circular imports.
 // onRebuildStaff  — called when accidentals toggle changes
 // onApplyKeyFilter — called when shadow-key toggle changes
-export function initConfig({ onRebuildStaff, onApplyKeyFilter }) {
+export function initConfig({ onRebuildStaff, onApplyKeyFilter, onApplyRootHighlight }) {
   const freqCb   = document.getElementById('cfg-frequency');
   const shadowCb = document.getElementById('cfg-shadow-key');
+  const rootCb   = document.getElementById('cfg-root-key');
   const twoHCb      = document.getElementById('cfg-two-handed');
   const strictCb    = document.getElementById('cfg-scale-strict');
 
   freqCb.checked   = config.showFrequency;
   shadowCb.checked = config.shadowOffKey;
+  rootCb.checked   = config.showRootKey;
   twoHCb.checked   = JSON.parse(localStorage.getItem('cfg-two-handed')    ?? 'false');
   strictCb.checked = JSON.parse(localStorage.getItem('cfg-scale-strict')  ?? 'false');
   practice.scale_strict = strictCb.checked;
@@ -51,6 +54,12 @@ export function initConfig({ onRebuildStaff, onApplyKeyFilter }) {
     config.shadowOffKey = shadowCb.checked;
     localStorage.setItem('cfg-shadow-key', config.shadowOffKey);
     onApplyKeyFilter();
+  });
+
+  rootCb.addEventListener('change', () => {
+    config.showRootKey = rootCb.checked;
+    localStorage.setItem('cfg-root-key', config.showRootKey);
+    onApplyRootHighlight();
   });
 
   twoHCb.addEventListener('change', () => {

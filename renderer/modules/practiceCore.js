@@ -16,12 +16,7 @@ export const practice = {
   key:              'random',
   sequential:       false,  // scale-run mode: notes played one at a time in order
   seqIndex:         0,
-  totalCorrect:     0,
-  totalAttempts:    0,
   feedbackTimer:    null,
-  startTime:        null,
-  timerInterval:    null,
-  completionHistory: JSON.parse(localStorage.getItem('completionHistory') || '[]'),
   viewingScaleMode: false,
   scale_strict:     false,
 };

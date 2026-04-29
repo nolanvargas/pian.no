@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body data-tab="piano">
 
   <header id="header">
     <h1 id="app-title">Piano</h1>
@@ -22,96 +22,90 @@
       <span id="velocity-label">vel: --</span>
       <span id="freq-label"></span>
     </div>
+    <div id="sustain-indicator">
+      <span class="sustain-dot"></span>
+      SUS
+    </div>
   </header>
 
-  <div id="resize-container">
+  <nav id="tab-bar">
+    <button class="tab active" data-tab="piano">Piano</button>
+    <button class="tab" data-tab="scale">Scale</button>
+    <button class="tab" data-tab="random">Random</button>
+    <button class="tab" data-tab="tails">Tails</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </nav>
 
-  <section id="practice-panel" class="expanded">
-    <div id="practice-header">
-      <button id="practice-toggle" aria-expanded="true">
-        Key Practice<span id="practice-toggle-arrow"></span>
-      </button>
-      <div id="practice-controls">
-        <label for="key-select" title="Key signature for generated notes">Key</label>
-        <select id="key-select" title="Key signature for generated notes">
-          <option value="random">Random</option>
-          <option value="C">C major</option>
-          <option value="G">G major</option>
-          <option value="D">D major</option>
-          <option value="A">A major</option>
-          <option value="E">E major</option>
-          <option value="B">B major</option>
-          <option value="F#">F# major</option>
-          <option value="F">F major</option>
-          <option value="Bb">Bb major</option>
-          <option value="Eb">Eb major</option>
-          <option value="Ab">Ab major</option>
-          <option value="Db">Db major</option>
-        </select>
-        <label for="count-select" title="Number of notes to generate">Notes</label>
-        <select id="count-select" title="Number of notes to generate">
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4" selected>4</option>
-          <option value="5">5</option>
-          <option value="6">6</option>
-          <option value="7">7</option>
-          <option value="8">8</option>
-        </select>
-        <label for="pattern-select" title="Musical pattern type for generated notes">Pattern</label>
-        <select id="pattern-select" title="Musical pattern type for generated notes">
-          <option value="any">Any</option>
-          <option value="random">Random Notes</option>
-          <option value="triad">Triad</option>
-          <option value="scalefragment">Scale Fragment</option>
-          <option value="arpeggio">Arpeggio</option>
-          <option value="interval">Interval</option>
-          <option value="shell">Shell Voicing</option>
-          <option value="pentatonic">Pentatonic</option>
-        </select>
-        <button id="generate-btn" title="Generate a new set of notes to practice">Generate</button>
-        <button id="scale-btn" title="Show the full scale for the selected key">Scale</button>
-      </div>
-      <label class="config-label" title="Generate notes for both treble and bass clef">
-        <input type="checkbox" id="cfg-two-handed" />
-        <span class="toggle-track"></span>
-        2H
-      </label>
-<label class="config-label" title="Show note frequency in Hz on key press">
-        <input type="checkbox" id="cfg-frequency" />
-        <span class="toggle-track"></span>
-        Hz
-      </label>
-      <label class="config-label" title="Highlight target keys on the piano keyboard">
-        <input type="checkbox" id="cfg-shadow-key" />
-        <span class="toggle-track"></span>
-        Shadow
-      </label>
+  <div id="tab-strip"></div>
+
+  <!-- Hidden control fragments — moved into #tab-strip on tab activation -->
+  <div id="tab-fragments" hidden>
+    <div class="key-dropdown" data-keyselect-host>
+      <select id="key-select" title="Key signature">
+        <option value="random">Random</option>
+        <option value="C">C major</option>
+        <option value="G">G major</option>
+        <option value="D">D major</option>
+        <option value="A">A major</option>
+        <option value="E">E major</option>
+        <option value="B">B major</option>
+        <option value="F#">F# major</option>
+        <option value="F">F major</option>
+        <option value="Bb">Bb major</option>
+        <option value="Eb">Eb major</option>
+        <option value="Ab">Ab major</option>
+        <option value="Db">Db major</option>
+      </select>
+    </div>
+
+    <div data-tab-controls="scale">
+      <label for="key-select" title="Key signature">Key</label>
+      <span data-keyselect-slot></span>
+      <button id="scale-btn" title="Show the full scale for the selected key">Scale</button>
       <label class="config-label" title="In scale mode, wrong notes flash all keys red and restart the scale">
         <input type="checkbox" id="cfg-scale-strict" />
         <span class="toggle-track"></span>
         Strict
+      </label>
+    </div>
+
+    <div data-tab-controls="random">
+      <label for="key-select" title="Key signature">Key</label>
+      <span data-keyselect-slot></span>
+      <label for="count-select" title="Number of notes to generate">Notes</label>
+      <select id="count-select" title="Number of notes to generate">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4" selected>4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+      </select>
+      <label for="pattern-select" title="Musical pattern type for generated notes">Pattern</label>
+      <select id="pattern-select" title="Musical pattern type for generated notes">
+        <option value="any">Any</option>
+        <option value="random">Random Notes</option>
+        <option value="triad">Triad</option>
+        <option value="scalefragment">Scale Fragment</option>
+        <option value="arpeggio">Arpeggio</option>
+        <option value="interval">Interval</option>
+        <option value="shell">Shell Voicing</option>
+        <option value="pentatonic">Pentatonic</option>
+      </select>
+      <button id="generate-btn" title="Generate a new set of notes to practice">Generate</button>
+      <label class="config-label" title="Generate notes for both treble and bass clef">
+        <input type="checkbox" id="cfg-two-handed" />
+        <span class="toggle-track"></span>
+        2H
       </label>
       <label class="config-label edge-bias-label" title="0 = uniform · positive = favor edge keys · negative = favor center keys">
         <span>Edge</span>
         <input type="range" id="cfg-edge-bias" min="-2" max="3" step="0.5" value="0" />
         <span id="cfg-edge-bias-val">0.0</span>
       </label>
-      <div id="sustain-indicator">
-        <span class="sustain-dot"></span>
-        SUS
-      </div>
     </div>
-    <div id="practice-content" hidden>
-      <div id="practice-status">
-        <span id="progress-label"></span>
-        <span id="timer-label"></span>
-        <span id="score-label">Score: 0 / 0</span>
-        <button id="clear-btn" title="Clear practice history and reset session">Clear</button>
-      </div>
-      <div id="analytics-section"></div>
-    </div>
-  </section>
+  </div>
 
   <section id="staff-section">
     <button id="staff-align-btn" title="Cycle staff alignment"></button>
@@ -119,15 +113,45 @@
     <svg id="staff-svg" viewBox="0 0 700 480" xmlns="http://www.w3.org/2000/svg"></svg>
   </section>
 
-  <div class="resize-handle"></div>
+  <section id="tab-main-tails" class="tab-main" hidden>
+    <div class="tab-main-inner">
+      <h2>Tails</h2>
+      <p>Coming soon.</p>
+    </div>
+  </section>
+
+  <section id="tab-main-settings" class="tab-main" hidden>
+    <div class="tab-main-inner">
+      <h2>Settings</h2>
+      <div class="settings-row">
+        <label class="config-label" title="Show note frequency in Hz on key press">
+          <input type="checkbox" id="cfg-frequency" />
+          <span class="toggle-track"></span>
+          Show frequency (Hz)
+        </label>
+      </div>
+      <div class="settings-row">
+        <label class="config-label" title="Highlight target keys on the piano keyboard">
+          <input type="checkbox" id="cfg-shadow-key" />
+          <span class="toggle-track"></span>
+          Shadow off-key
+        </label>
+      </div>
+      <div class="settings-row">
+        <label class="config-label" title="Highlight the root note of the selected key">
+          <input type="checkbox" id="cfg-root-key" />
+          <span class="toggle-track"></span>
+          Show root key
+        </label>
+      </div>
+    </div>
+  </section>
 
   <main id="piano-container">
     <div id="piano-wrapper">
       <div id="piano"></div>
     </div>
   </main>
-
-  </div><!-- #resize-container -->
 
   <script type="module" src="app.js"></script>
 </body>

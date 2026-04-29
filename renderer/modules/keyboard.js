@@ -164,6 +164,7 @@ export function clearKeyFilter() {
 
 export function applyRootHighlight(keyName) {
   clearRootHighlight();
+  if (!config.showRootKey) return;
   if (!keyName || keyName === 'random') return;
   const root = KEY_ROOTS[keyName];
   if (root === undefined) return;
