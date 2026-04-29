@@ -1,0 +1,15 @@
+{
+  "name": "piano-midi-app",
+  "version": "1.0.0",
+  "description": "88-key MIDI piano visualizer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  },
+  "dependencies": {
+    "pixi.js": "^8.16.0"
+  }
+}
