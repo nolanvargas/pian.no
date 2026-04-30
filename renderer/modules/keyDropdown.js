@@ -25,7 +25,7 @@ function svgEl(tag, attrs) {
 // Mini treble-stave preview. Step→y: y = 36 - 3*step (top line=10, bottom=2).
 function buildPreview(key) {
   const svg = svgEl('svg', {
-    viewBox: '0 0 84 36', width: 84, height: 36, class: 'key-preview',
+    viewBox: '0 0 84 36', width: 126, height: 54, class: 'key-preview',
   });
   for (let i = 0; i < 5; i++) {
     const y = 6 + i * 6;

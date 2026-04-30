@@ -84,21 +84,27 @@ function ledgerSteps(step) {
   return out;
 }
 
-// Map: midi → xOffset (px, relative to CFG.noteX). Adjacent notes (step diff 1) shift left.
+// Map: midi → xOffset (px, relative to CFG.noteX). Within a run of adjacent
+// notes (each one diatonic step apart), sides alternate so no two seconds
+// collide. Lowest note of the run sits on the left (displaced) side — this
+// satisfies the engraving rules for up-stems at any length, and for even-count
+// down-stems. (Odd-count down-stems would flip; not handled here.)
 function computeXOffsets(midiList) {
   const offset  = CFG.noteRx * 2 - 2;
   const entries = midiList.map(midi => ({ midi, step: midiToStepCtx(midi) }));
   entries.sort((a, b) => a.step - b.step);
-  const result = new Map();
-  for (const { midi } of entries) result.set(midi, 0);
+  const result = new Map(entries.map(({ midi }) => [midi, 0]));
+
   let i = 0;
   while (i < entries.length) {
-    if (i + 1 < entries.length && entries[i + 1].step - entries[i].step === 1) {
-      result.set(entries[i].midi, -offset);
-      i += 2;
-    } else {
-      i++;
+    let j = i;
+    while (j + 1 < entries.length && entries[j + 1].step - entries[j].step === 1) j++;
+    if (j > i) {
+      for (let k = i; k <= j; k++) {
+        result.set(entries[k].midi, (k - i) % 2 === 0 ? -offset : 0);
+      }
     }
+    i = j + 1;
   }
   return result;
 }
@@ -112,20 +118,61 @@ function drawGroupStem(ng, notes) {
   const dir     = (hi.step - ref) >= (ref - lo.step) ? 'down' : 'up';
   const stemLen = 7 * CFG.sStep;
   let x, y1, y2, color;
+  const maxNx = Math.max(...notes.map(n => n.nx));
+  const minNx = Math.min(...notes.map(n => n.nx));
+  const split = maxNx !== minNx;
   if (dir === 'up') {
-    x  = lo.nx + CFG.noteRx;
+    x  = split ? maxNx - CFG.noteRx : lo.nx + CFG.noteRx;
     y1 = lo.cy;
     y2 = hi.cy - stemLen;
     if (lo.step < -10) y2 = Math.min(y2, CFG.sCtr + 6 * CFG.sStep);
     color = lo.color;
   } else {
-    x  = hi.nx - CFG.noteRx;
+    x  = split ? minNx + CFG.noteRx : hi.nx - CFG.noteRx;
     y1 = hi.cy;
     y2 = lo.cy + stemLen;
     if (hi.step > 10) y2 = Math.max(y2, CFG.sCtr - 6 * CFG.sStep);
     color = hi.color;
   }
   ng.appendChild(svgEl('line', { x1: x, x2: x, y1, y2, stroke: color, 'stroke-width': 1.5 }));
+}
+
+// Filled (quarter) or open (half) note head. Open heads use a thicker stroke
+// and a small rotation for the classical tilted-oval look.
+let halfNoteMaskId = 0;
+
+function makeNoteHead(cx, cy, color, half) {
+  if (!half) {
+    return svgEl('ellipse', {
+      cx, cy, rx: CFG.noteRx, ry: CFG.noteRy, fill: color,
+      transform: `rotate(-30 ${cx} ${cy})`,
+    });
+  }
+  const g       = svgEl('g', {});
+  const maskId  = `half-cut-${++halfNoteMaskId}`;
+  const defs    = svgEl('defs', {});
+  const mask    = svgEl('mask', { id: maskId });
+  mask.appendChild(svgEl('rect', { x: cx - CFG.noteRx * 2, y: cy - CFG.noteRy * 2, width: CFG.noteRx * 4, height: CFG.noteRy * 4, fill: 'white' }));
+  mask.appendChild(svgEl('ellipse', { cx, cy, rx: CFG.noteRx, ry: CFG.noteRy * 0.57, fill: 'black' }));
+  defs.appendChild(mask);
+  g.appendChild(defs);
+  g.appendChild(svgEl('ellipse', {
+    cx, cy, rx: CFG.noteRx, ry: CFG.noteRy,
+    fill: color, mask: `url(#${maskId})`,
+    transform: `rotate(-30 ${cx} ${cy})`,
+  }));
+  g.appendChild(svgEl('ellipse', {
+    cx, cy, rx: CFG.noteRx, ry: CFG.noteRy,
+    fill: 'none', stroke: color, 'stroke-width': 1.5,
+    transform: `rotate(-30 ${cx} ${cy})`,
+  }));
+  return g;
+}
+
+// Pattern entries may be a bare midi number or { midi, half }.
+function normalizePatternEntry(entry) {
+  return typeof entry === 'number' ? { midi: entry, half: false }
+                                   : { midi: entry.midi, half: !!entry.half };
 }
 
 function drawChordStems(ng, noteData) {
@@ -186,10 +233,11 @@ export function renderKeySignature(ng, key) {
   const stepsT = sig.type === '#' ? SHARP_STEPS_TREBLE : FLAT_STEPS_TREBLE;
   const stepsB = sig.type === '#' ? SHARP_STEPS_BASS   : FLAT_STEPS_BASS;
   const symbol = sig.type === '#' ? '♯' : '♭';
+  const fontSize = sig.type === '#' ? CFG.keySigSizeSharp : CFG.keySigSizeFlat;
   for (let i = 0; i < sig.count; i++) {
     const x = CFG.keySigX + i * CFG.keySigSpacing;
     const makeAcc = (step) => {
-      const t = svgEl('text', { x, y: CFG.sCtr - step * CFG.sStep + 4, fill: '#000', 'font-size': CFG.keySigSize, 'text-anchor': 'middle', 'font-family': 'serif' });
+      const t = svgEl('text', { x, y: CFG.sCtr - step * CFG.sStep + 7, fill: '#000', 'font-size': fontSize, 'text-anchor': 'middle', 'font-family': 'serif' });
       t.textContent = symbol;
       return t;
     };
@@ -242,7 +290,7 @@ function addNoteToStaff(ng, midi, xOff = 0) {
     ng.appendChild(line);
     entry.ledgers.push(line);
   }
-  entry.ellipse = svgEl('ellipse', { cx: nx, cy, rx: CFG.noteRx, ry: CFG.noteRy, fill: '#000' });
+  entry.ellipse = makeNoteHead(nx, cy, '#000', false);
   ng.appendChild(entry.ellipse);
   const acc         = accidentalForMidi(midi);
   const selectedKey = document.getElementById('key-select')?.value ?? 'random';
@@ -250,7 +298,8 @@ function addNoteToStaff(ng, midi, xOff = 0) {
                : (config.showAccidentals && needsNatural(midi, selectedKey))       ? '♮'
                : null;
   if (symbol) {
-    entry.accidental = svgEl('text', { x: nx - CFG.noteRx - 18, y: cy + 4, fill: '#000', 'font-size': 26, 'text-anchor': 'middle' });
+    const sz = symbol === '♭' ? CFG.keySigSizeFlat : CFG.keySigSizeSharp;
+    entry.accidental = svgEl('text', { x: nx - CFG.noteRx - 18, y: cy + 4, fill: '#000', 'font-size': sz, 'text-anchor': 'middle' });
     entry.accidental.textContent = symbol;
     ng.appendChild(entry.accidental);
   }
@@ -260,19 +309,21 @@ function addNoteToStaff(ng, midi, xOff = 0) {
 function renderPracticeStaff(ng, activeKeys, ctx) {
   renderKeySignature(ng, ctx.key);
 
-  const displayPattern = ctx.sequential
+  const rawPattern = ctx.sequential
     ? (ctx.pattern[ctx.seqIndex] !== undefined ? [ctx.pattern[ctx.seqIndex]] : [])
     : ctx.pattern;
-  const xOffsets = computeXOffsets(displayPattern);
+  const displayPattern = rawPattern.map(normalizePatternEntry);
+  const patternMidis   = displayPattern.map(e => e.midi);
+  const xOffsets = computeXOffsets(patternMidis);
 
-  const patternData = displayPattern.map(midi => {
+  const patternData = displayPattern.map(({ midi, half }) => {
     const step = midiToStepCtx(midi);
-    return { midi, step, nx: CFG.noteX + (xOffsets.get(midi) ?? 0), cy: CFG.sCtr - step * CFG.sStep, color: activeKeys.has(midi) ? '#22c55e' : '#000' };
+    return { midi, half: half || !!ctx.half, step, nx: CFG.noteX + (xOffsets.get(midi) ?? 0), cy: CFG.sCtr - step * CFG.sStep, color: activeKeys.has(midi) ? '#22c55e' : '#000' };
   });
 
   drawChordStems(ng, patternData);
 
-  for (const { midi, step: s, nx, cy, color } of patternData) {
+  for (const { midi, step: s, nx, cy, color, half } of patternData) {
     for (const ls of ledgerSteps(s)) {
       ng.appendChild(svgEl('line', {
         x1: nx - CFG.noteRx - 4, x2: nx + CFG.noteRx + 4,
@@ -280,13 +331,14 @@ function renderPracticeStaff(ng, activeKeys, ctx) {
         stroke: '#000', 'stroke-width': 1.5,
       }));
     }
-    ng.appendChild(svgEl('ellipse', { cx: nx, cy, rx: CFG.noteRx, ry: CFG.noteRy, fill: color }));
+    ng.appendChild(makeNoteHead(nx, cy, color, half));
     const acc = accidentalForMidi(midi);
     const sym = (config.showAccidentals && acc && !isInKeySig(midi, ctx.key)) ? acc
               : (config.showAccidentals && needsNatural(midi, ctx.key))       ? '♮'
               : null;
     if (sym) {
-      const t = svgEl('text', { x: nx - CFG.noteRx - 18, y: cy + 4, fill: color, 'font-size': 26, 'text-anchor': 'middle' });
+      const sz = sym === '♭' ? CFG.keySigSizeFlat : CFG.keySigSizeSharp;
+      const t = svgEl('text', { x: nx - CFG.noteRx - 18, y: cy + 4, fill: color, 'font-size': sz, 'text-anchor': 'middle' });
       t.textContent = sym;
       ng.appendChild(t);
     }
@@ -296,7 +348,7 @@ function renderPracticeStaff(ng, activeKeys, ctx) {
   if (ctx.active && !ctx.sequential) {
     const wrongData = [];
     for (const [midi] of activeKeys) {
-      if (ctx.pattern.includes(midi)) continue;
+      if (patternMidis.includes(midi)) continue;
       const step = midiToStepCtx(midi);
       wrongData.push({ midi, step, nx: CFG.noteX, cy: CFG.sCtr - step * CFG.sStep, color: '#ef4444' });
     }
@@ -309,13 +361,14 @@ function renderPracticeStaff(ng, activeKeys, ctx) {
           stroke: '#000', 'stroke-width': 1.5,
         }));
       }
-      ng.appendChild(svgEl('ellipse', { cx: nx, cy, rx: CFG.noteRx, ry: CFG.noteRy, fill: color }));
+      ng.appendChild(makeNoteHead(nx, cy, color, false));
       const acc = accidentalForMidi(midi);
       const sym = (config.showAccidentals && acc && !isInKeySig(midi, ctx.key)) ? acc
                 : (config.showAccidentals && needsNatural(midi, ctx.key))       ? '♮'
                 : null;
       if (sym) {
-        const t = svgEl('text', { x: nx - CFG.noteRx - 18, y: cy + 4, fill: color, 'font-size': 26, 'text-anchor': 'middle' });
+        const sz = sym === '♭' ? CFG.keySigSizeFlat : CFG.keySigSizeSharp;
+        const t = svgEl('text', { x: nx - CFG.noteRx - 18, y: cy + 4, fill: color, 'font-size': sz, 'text-anchor': 'middle' });
         t.textContent = sym;
         ng.appendChild(t);
       }

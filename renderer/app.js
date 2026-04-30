@@ -5,7 +5,7 @@ import { initConfig }                                    from './modules/config.
 import { buildStaff, rebuildStaff }                     from './modules/staff.js';
 import {
   scaleKeyboard, applyKeyFilter, applyRootHighlight,
-  getMouseHeldMidi, clearMouseHeld,
+  getMouseHeldMidi, clearMouseHeld, initComputerKeyboard,
 }                                                        from './modules/keyboard.js';
 import {
   activeKeys, noteOn, noteOff,
@@ -14,6 +14,7 @@ import {
 import { practice }                                      from './modules/practiceCore.js';
 import {
   checkPracticeNote, evaluatePracticeChord, initPracticeControls,
+  resetPracticeSession,
 }                                                        from './modules/practiceFlow.js';
 import { initTabs }                                      from './modules/tabs.js';
 import { initKeyDropdown }                               from './modules/keyDropdown.js';
@@ -37,13 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
     onNoteOff: (midi)      => noteOff(midi),
   };
 
-  initTabs();
   buildStaff();
-  initMIDI();
+  scaleKeyboard(keyboardCallbacks);
+  initComputerKeyboard(keyboardCallbacks);
   initPracticeControls();
   initKeyDropdown();
   applyKeyFilter();
-  scaleKeyboard(keyboardCallbacks);
+  initTabs({ onTabChange: () => resetPracticeSession() });
+  initMIDI();
 
   document.addEventListener('mouseup', () => {
     const held = getMouseHeldMidi();

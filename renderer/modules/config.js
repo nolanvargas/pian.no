@@ -14,7 +14,7 @@ export const CFG = {
   whiteW: KEY_BASE.whiteW, blackW: KEY_BASE.blackW,
   keyH:   KEY_BASE.keyH,   blackH: KEY_BASE.blackH,
   // Practice
-  practiceStep: 70, keySigX: 64, keySigSpacing: 14, keySigSize: 16,
+  practiceStep: 70, keySigX: 78, keySigSpacing: 14, keySigSizeSharp: 27, keySigSizeFlat: 38,
   // Staff signs (clefs)
   trebleX: 10, trebleYSteps: 2, trebleSize: 90,
   bassX: 11, bassYSteps: 8.5, bassSize: 72,
@@ -36,12 +36,14 @@ export function initConfig({ onRebuildStaff, onApplyKeyFilter, onApplyRootHighli
   const rootCb   = document.getElementById('cfg-root-key');
   const twoHCb      = document.getElementById('cfg-two-handed');
   const strictCb    = document.getElementById('cfg-scale-strict');
+  const halfCb      = document.getElementById('cfg-half-notes');
 
   freqCb.checked   = config.showFrequency;
   shadowCb.checked = config.shadowOffKey;
   rootCb.checked   = config.showRootKey;
   twoHCb.checked   = JSON.parse(localStorage.getItem('cfg-two-handed')    ?? 'false');
   strictCb.checked = JSON.parse(localStorage.getItem('cfg-scale-strict')  ?? 'false');
+  halfCb.checked   = JSON.parse(localStorage.getItem('cfg-half-notes')    ?? 'false');
   practice.scale_strict = strictCb.checked;
 
   freqCb.addEventListener('change', () => {
@@ -69,6 +71,10 @@ export function initConfig({ onRebuildStaff, onApplyKeyFilter, onApplyRootHighli
   strictCb.addEventListener('change', () => {
     practice.scale_strict = strictCb.checked;
     localStorage.setItem('cfg-scale-strict', strictCb.checked);
+  });
+
+  halfCb.addEventListener('change', () => {
+    localStorage.setItem('cfg-half-notes', halfCb.checked);
   });
 
   const edgeSlider = document.getElementById('cfg-edge-bias');

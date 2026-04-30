@@ -17,8 +17,10 @@ export const practice = {
   sequential:       false,  // scale-run mode: notes played one at a time in order
   seqIndex:         0,
   feedbackTimer:    null,
+  nextPatternTimer: null,
   viewingScaleMode: false,
   scale_strict:     false,
+  half:             false,
 };
 
 // ── Edge bias coefficient ─────────────────────────────────────────────────────

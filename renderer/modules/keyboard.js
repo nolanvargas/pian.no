@@ -75,6 +75,40 @@ export function scaleKeyboard(callbacks) {
   applyKeyFilter();
 }
 
+// ── Computer keyboard input ──────────────────────────────────────────────────
+// Bottom two QWERTY rows play a chromatic run from middle C upward.
+// Lower row (zxcv...) = white keys; asdf row (sd_gh_...) = black keys.
+const COMPUTER_KEY_MAP = {
+  'z': 60, 's': 61, 'x': 62, 'd': 63, 'c': 64, 'v': 65, 'g': 66, 'b': 67,
+  'h': 68, 'n': 69, 'j': 70, 'm': 71, ',': 72, 'l': 73, '.': 74, ';': 75, '/': 76,
+};
+const heldComputerKeys = new Set();
+
+export function initComputerKeyboard({ onNoteOn, onNoteOff }) {
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = e.target?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
+    const midi = COMPUTER_KEY_MAP[e.key.toLowerCase()];
+    if (midi === undefined) return;
+    if (heldComputerKeys.has(midi)) return;
+    heldComputerKeys.add(midi);
+    onNoteOn(midi, 80);
+    e.preventDefault();
+  });
+  window.addEventListener('keyup', (e) => {
+    const midi = COMPUTER_KEY_MAP[e.key.toLowerCase()];
+    if (midi === undefined) return;
+    if (!heldComputerKeys.has(midi)) return;
+    heldComputerKeys.delete(midi);
+    onNoteOff(midi);
+  });
+  window.addEventListener('blur', () => {
+    for (const midi of heldComputerKeys) onNoteOff(midi);
+    heldComputerKeys.clear();
+  });
+}
+
 // ── Key highlighting ──────────────────────────────────────────────────────────
 
 export function applyTargetHighlights(practice) {

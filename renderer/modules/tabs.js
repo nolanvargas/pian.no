@@ -5,7 +5,7 @@
 
 const VALID_TABS = ['piano', 'scale', 'random', 'tails', 'settings'];
 
-export function initTabs() {
+export function initTabs({ onTabChange } = {}) {
   const buttons   = document.querySelectorAll('.tab');
   const strip     = document.getElementById('tab-strip');
   const fragments = document.getElementById('tab-fragments');
@@ -39,6 +39,8 @@ export function initTabs() {
     }
 
     localStorage.setItem('cfg-tab', name);
+
+    if (onTabChange) onTabChange(name);
   }
 
   buttons.forEach(b => {

@@ -52,10 +52,13 @@ export function generatePattern() {
   const patType   = document.getElementById('pattern-select').value;
   const twoHanded = document.getElementById('cfg-two-handed').checked;
 
+  const halfEnabled = document.getElementById('cfg-half-notes')?.checked;
+  const useHalf     = !!halfEnabled && Math.random() < 0.33;
+
   if (twoHanded) {
     const usedKey = resolveKey(keyName);
     const pattern = generateTwoHanded(keyName, MIDI_MIN, MIDI_MAX, noteCount, patType);
-    startTest(pattern, usedKey);
+    startTest(pattern, usedKey, false, useHalf);
     return;
   }
 
@@ -77,12 +80,12 @@ export function generatePattern() {
 
   const usedKey = (type === 'random' && keyName === 'random') ? 'random' : resolveKey(keyName);
   const pattern = (GENERATORS[type] ?? GENERATORS.random)().sort((a, b) => a - b);
-  startTest(pattern, usedKey);
+  startTest(pattern, usedKey, false, useHalf);
 }
 
 // ── Test lifecycle ────────────────────────────────────────────────────────────
 
-export function startTest(pattern, key, sequential = false) {
+export function startTest(pattern, key, sequential = false, half = false) {
   clearTargetHighlights();
   clearWrongHints();
   applyRootHighlight(key);
@@ -93,6 +96,7 @@ export function startTest(pattern, key, sequential = false) {
   practice.key        = key || 'random';
   practice.sequential = sequential;
   practice.seqIndex   = 0;
+  practice.half       = half;
 
   clearFeedback();
   renderStaff(activeKeys, practice);
@@ -117,7 +121,7 @@ export function checkPracticeNote(midi) {
       practice.active = false;
       clearTargetHighlights();
       showFeedback(true);
-      setTimeout(() => generatePattern(), 1200);
+      practice.nextPatternTimer = setTimeout(() => generatePattern(), 1200);
     } else {
       showFeedback(true);
       applyTargetHighlights(practice);
@@ -150,7 +154,7 @@ export function evaluatePracticeChord() {
     clearTargetHighlights();
     clearWrongHints();
     showFeedback(true);
-    setTimeout(() => generatePattern(), 1200);
+    practice.nextPatternTimer = setTimeout(() => generatePattern(), 1200);
   }
 }
 
@@ -171,6 +175,26 @@ export function clearFeedback() {
   const el = document.getElementById('feedback-label');
   el.textContent = '';
   el.className   = '';
+}
+
+// ── Tab-switch reset ──────────────────────────────────────────────────────────
+// Wipes transient practice state and any DOM remnants so a tab switch lands
+// in a clean state. Preserves practice.key and practice.scale_strict.
+
+export function resetPracticeSession() {
+  if (practice.feedbackTimer)    { clearTimeout(practice.feedbackTimer);    practice.feedbackTimer    = null; }
+  if (practice.nextPatternTimer) { clearTimeout(practice.nextPatternTimer); practice.nextPatternTimer = null; }
+  practice.active           = false;
+  practice.pattern          = [];
+  practice.played           = new Set();
+  practice.sequential       = false;
+  practice.seqIndex         = 0;
+  practice.viewingScaleMode = false;
+  practice.half             = false;
+  clearTargetHighlights();
+  clearWrongHints();
+  clearFeedback();
+  renderStaff(activeKeys, practice);
 }
 
 // ── Practice control wiring ───────────────────────────────────────────────────
