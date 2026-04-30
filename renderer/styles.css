@@ -394,6 +394,20 @@ body[data-tab="settings"] #tab-main-settings {
   display: flex;
 }
 
+/* Tails canvas fills the panel flush above the piano. */
+#tab-main-tails {
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  overflow: hidden;
+}
+
+#tails-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* ── Staff ── */
 #staff-section {
   position: relative;

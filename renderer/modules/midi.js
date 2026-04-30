@@ -38,10 +38,14 @@ function trackHardwareNote(midi) {
 // Cross-module callbacks wired by app.js to avoid circular imports.
 let _onCheckPracticeNote     = () => {};
 let _onEvaluatePracticeChord = () => {};
+let _onTailNoteOn            = () => {};
+let _onTailNoteOff           = () => {};
 
-export function initMIDICallbacks({ onCheckPracticeNote, onEvaluatePracticeChord }) {
+export function initMIDICallbacks({ onCheckPracticeNote, onEvaluatePracticeChord, onTailNoteOn, onTailNoteOff }) {
   _onCheckPracticeNote     = onCheckPracticeNote;
   _onEvaluatePracticeChord = onEvaluatePracticeChord;
+  if (onTailNoteOn)  _onTailNoteOn  = onTailNoteOn;
+  if (onTailNoteOff) _onTailNoteOff = onTailNoteOff;
 }
 
 // ── Note events ───────────────────────────────────────────────────────────────
@@ -69,6 +73,7 @@ export function noteOn(midi, velocity) {
 
   renderStaff(activeKeys, practice);
   _onCheckPracticeNote(midi);
+  _onTailNoteOn(midi, velocity);
 }
 
 export function noteOff(midi) {
@@ -93,6 +98,7 @@ export function noteOff(midi) {
 
   renderStaff(activeKeys, practice);
   if (practice.active && !practice.sequential) _onEvaluatePracticeChord();
+  _onTailNoteOff(midi);
 }
 
 // ── Sustain pedal ─────────────────────────────────────────────────────────────
@@ -109,6 +115,7 @@ export function setSustain(on) {
       el.classList.remove('active', 'pedal-held');
       el.style.removeProperty('--key-color');
       activeKeys.delete(midi);
+      _onTailNoteOff(midi);
     }
     if (activeKeys.size === 0) {
       document.getElementById('note-name').textContent      = '--';

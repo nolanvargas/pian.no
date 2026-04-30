@@ -18,12 +18,18 @@ import {
 }                                                        from './modules/practiceFlow.js';
 import { initTabs }                                      from './modules/tabs.js';
 import { initKeyDropdown }                               from './modules/keyDropdown.js';
+import {
+  initTails, recordNoteOn as tailsNoteOn,
+  recordNoteOff as tailsNoteOff, setActive as tailsSetActive,
+}                                                        from './modules/tails.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Callbacks that cross the midi ↔ practice boundary
   initMIDICallbacks({
     onCheckPracticeNote:     (midi) => checkPracticeNote(midi),
     onEvaluatePracticeChord: ()     => evaluatePracticeChord(),
+    onTailNoteOn:            (midi, velocity) => tailsNoteOn(midi, velocity),
+    onTailNoteOff:           (midi) => tailsNoteOff(midi),
   });
 
   // Callbacks that cross the config ↔ staff/keyboard boundary
@@ -44,7 +50,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initPracticeControls();
   initKeyDropdown();
   applyKeyFilter();
-  initTabs({ onTabChange: () => resetPracticeSession() });
+  initTails();
+  initTabs({ onTabChange: (name) => {
+    resetPracticeSession();
+    tailsSetActive(name === 'tails');
+  }});
   initMIDI();
 
   document.addEventListener('mouseup', () => {
